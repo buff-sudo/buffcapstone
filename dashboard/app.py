@@ -311,6 +311,83 @@ def page_predictions(rf, encoders, split_data):
         st.pyplot(fig)
         plt.close(fig)
 
+# Page: Model Performance
+def page_performance(rf, lr, dt, encoders, split_data):
+    st.header("Model Performance Evaluation")
+
+    X_test = split_data["X_test"]
+    y_test = split_data["y_test"]
+    feature_names = split_data["feature_names"]
+    target_encoder = encoders.get("SpendingSegment")
+    class_names = list(target_encoder.classes_)
+
+    models = {
+        "Logistic Regression": lr,
+        "Decision Tree": dt,
+        "Random Forest": rf,
+    }
+
+    # Confusion Matrices
+    st.subheader("Confusion Matrices")
+    cols = st.columns(3)
+    for col_ui, (name, model) in zip(cols, models.items()):
+        with col_ui:
+            y_pred = model.predict(X_test)
+            cm = confusion_matrix(y_test, y_pred)
+            fig, ax = plt.subplots(figsize=(5, 4))
+            disp = ConfusionMatrixDisplay(cm, display_labels=class_names)
+            disp.plot(ax=ax, cmap="Blues", values_format="d")
+            ax.set_title(name)
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close(fig)
+    
+    # Classification Reports
+    st.subheader("Classification Reports")
+    for name, model in models.items():
+        y_pred = model.predict(X_test)
+        report = classification_report(y_test, y_pred, target_names=class_names, output_dict=True)
+        report_df = pd.DataFrame(report).T.round(4)
+        st.write(f"**{name}**")
+        st.dataframe(report_df, width="stretch")
+
+    # Comparison Table
+    st.subheader("Model Comparison")
+    comparison_rows = []
+    for name, model in models.items():
+        y_pred = model.predict(X_test)
+        comparison_rows.append({
+            "Model": name,
+            "Test Accuracy": f"{model.score(X_test, y_test):.4f}",
+            "Macro F1": f"{f1_score(y_test, y_pred, average="macro"):.4f}",
+        })
+    st.table(pd.DataFrame(comparison_rows))
+
+    # Success Criteria
+    st.subheader("Success Criteria")
+    y_pred_rf = rf.predict(X_test)
+    macro_f1 = f1_score(y_test, y_pred_rf, average="macro")
+    per_class_recall = recall_score(y_test, y_pred_rf, average=None)
+    recall_dict = dict(zip(class_names, per_class_recall))
+
+    col1, col2 = st.columns(2)
+    with col1:
+        f1_pass = macro_f1 >= 0.80
+        st.metric("Macro F1-Score", f"{macro_f1:.4f}")
+        if f1_pass:
+            st.success("PASS: meets the 0.80 threshold")
+        else:
+            st.error(f"FAIL: below the 0.80 threshold by {0.80 - macro_f1:.4f}")
+    
+    with col2:
+        whale_recall = recall_dict.get("whale")
+        whale_pass = whale_recall > 0.70
+        st.metric("Whale Recall", f"{whale_recall:.4f}")
+        if whale_pass:
+            st.success("PASS: meets the 0.70 threshold")
+        else:
+            st.error(f"FAIL: below the 0.70 threshold by {0.70 - whale_recall:.4f}")
+
 def main():
     if not check_pwd():
         return
