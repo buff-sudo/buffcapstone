@@ -24,6 +24,10 @@ MODELS_DIR = os.path.join(BASE_DIR, "..", "models")
 DATA_DIR = os.path.join(BASE_DIR, "..", "data")
 LOG_PATH = os.path.join(BASE_DIR, "..", "logs", "predictions.csv")
 
+GREEN = "#2ecc71"
+ORANGE = "#f39c12"
+RED = "#e74c3c"
+
 
 # Basic security check, would use st.secrets in production, for this capstone password is hardcoded
 def check_pwd():
@@ -82,3 +86,46 @@ def log_prediction(input_features, predicted_class, confidence):
                 f"{confidence:.4f}",
             ]
         )
+
+
+# Page: Overview
+def page_overview(raw_df):
+    st.header("Dataset Overview")
+    (
+        col1,
+        col2,
+        col3,
+    ) = st.columns(3)
+    col1.metric("Total Players", f"{len(raw_df):,}")
+    col2.metric("Features", raw_df.shape[1])
+    col3.metric("Missing Values", f"{raw_df.isnull().sum().sum():,}")
+
+    st.subheader("Class Distribution")
+
+    target_col = "SpendingSegment"
+
+    counts = raw_df[target_col].value_counts()
+    proportions = raw_df[target_col].value_counts(normalize=True)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        fig, ax = plt.subplots(figsize=(6, 4))
+        counts.plot.bar(ax=ax, color=[GREEN, ORANGE, RED])
+        ax.set_title("Segment Counts")
+        ax.set_ylabel("Count")
+        plt.tight_layout()
+        st.pyplot(fig)
+        plt.close(fig)
+    with col2:
+        fig, ax = plt.subplots(figsize=(6, 4))
+        proportions.plot.bar(ax=ax, color=[GREEN, ORANGE, RED])
+        ax.set_title("Segment proportions")
+        ax.set_ylabel("proportion")
+        plt.tight_layout()
+        st.pyplot(fig)
+        plt.close(fig)
+    st.subheader("Sample Data")
+    st.dataframe(raw_df.head(20), use_container_width=True)
+
+    st.subheader("Statistical Summary")
+    st.dataframe(raw_df.describe().T, use_container_width=True)
