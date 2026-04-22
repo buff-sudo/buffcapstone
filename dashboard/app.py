@@ -380,7 +380,7 @@ def page_performance(rf, lr, dt, encoders, split_data):
             st.error(f"FAIL: below the 0.80 threshold by {0.80 - macro_f1:.4f}")
     
     with col2:
-        whale_recall = recall_dict.get("whale")
+        whale_recall = recall_dict.get("Whale")
         whale_pass = whale_recall > 0.70
         st.metric("Whale Recall", f"{whale_recall:.4f}")
         if whale_pass:
@@ -432,6 +432,8 @@ def main():
             "Overview",
             "Exploration",
             "Predictions",
+            "Model Performance",
+            "Monitoring"
         ],
     )
 
@@ -444,6 +446,10 @@ def main():
         page_exploration(raw_df, cleaned_df, encoders)
     elif page == "Predictions":
         page_predictions(rf, encoders, split_data)
+    elif page == "Model Performance":
+        page_performance(rf, lr, dt, encoders, split_data)
+    elif page == "Monitoring":
+        page_monitoring()
 
 
 if __name__ == "__main__":
