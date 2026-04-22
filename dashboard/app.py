@@ -388,6 +388,39 @@ def page_performance(rf, lr, dt, encoders, split_data):
         else:
             st.error(f"FAIL: below the 0.70 threshold by {0.70 - whale_recall:.4f}")
 
+# Page: Monitoring
+def page_monitoring():
+    st.header("Prediction Monitoring")
+
+    if not os.path.exists(LOG_PATH):
+        st.info("No predictions logged. Use predictions page to classify a player")
+        return
+    
+    log_df = pd.read_csv(LOG_PATH)
+    st.metric("Total Predictions Logged", len(log_df))
+
+    # Prediction Distribution
+    st.subheader("Prediction Distribution")
+    if "predicted_class" in log_df.columns:
+        counts = log_df["predicted_class"].value_counts()
+        fig, ax = plt.subplots(figsize=(6, 4))
+        counts.plot.bar(ax=ax, color=[GREEN, ORANGE, RED])
+        ax.set_title("Predictions by Segment")
+        ax.set_ylabel("Count")
+        plt.tight_layout()
+        st.pyplot(fig)
+        plt.close(fig)
+    
+    # Prediction Log Table
+    st.subheader("Prediction Log")
+    st.dataframe(log_df.sort_values("timestamp", ascending=False), width="stretch")
+
+    # Clear log
+    if st.button("Clear Log"):
+        os.remove(LOG_PATH)
+        st.rerun()
+
+# Main
 def main():
     if not check_pwd():
         return
