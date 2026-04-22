@@ -129,3 +129,102 @@ def page_overview(raw_df):
 
     st.subheader("Statistical Summary")
     st.dataframe(raw_df.describe().T, use_container_width=True)
+
+
+# Page: Exploration
+def page_exploration(raw_df, cleaned_df, encoders):
+    st.header("Data Exploration")
+
+    st.subheader("Feature Correlation Heatmap")
+    target_col = "SpendingSegment"
+    numeric_df = cleaned_df.select_dtypes(include=[np.number])
+    corr = numeric_df.corr()
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    mask = np.triu(np.ones_like(corr, dtype=bool))
+    sns.heatmap(
+        corr,
+        mask=mask,
+        annot=True,
+        fmt=".2f",
+        cmap="coolwarm",
+        center=0,
+        ax=ax,
+        square=True,
+        linewidths=0.5,
+    )
+    ax.set_title("Correlation Matrix")
+    plt.tight_layout()
+    st.pyplot(fig)
+    plt.close(fig)
+
+    # Interactive scatter plot
+    st.subheader("Interactive Scatter Plot")
+
+    num_cols = raw_df.select_dtypes(include=[np.number]).columns.tolist()
+    if len(num_cols) < 2:
+        st.warning("Not enough numeric columns")
+        return
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        x_col = st.selectbox("X-axis", num_cols, index=0)
+    with col2:
+        y_default = 1 if len(num_cols) > 1 else 0
+        y_col = st.selectbox("Y-axis", num_cols, index=y_default)
+    with col3:
+        segments = ["All", "Whale", "Dolphin", "Minnow"]
+        segment_filter = st.selectbox("Filter by segment", segments)
+
+    plot_df = raw_df.copy()
+    if segment_filter != "All" and target_col:
+        plot_df = plot_df[plot_df[target_col] == segment_filter]
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    if target_col and segment_filter == "All":
+        for seg in raw_df[target_col].dropnull().unique():
+            subset = plot_df[plot_df[target_col] == seg]
+            ax.scatter(subset[x_col], plot_df[y_col], alpha=0.4, label=seg, s=15)
+        ax.legend()
+    else:
+        ax.scatter(plot_df[x_col], plot_df[y_col], alpha=0.4, s=15, color=RED)
+    ax.set_xlabel(x_col)
+    ax.set_ylabel(y_col)
+    ax.set_title(f"{y_col} vs {x_col}")
+    plt.tight_layout()
+    st.pyplot(fig)
+    plt.close(fig)
+
+    # Boxplots
+    st.subheader("Feature Distributions by Segment")
+
+    if target_col:
+        box_feature = st.selectbox("Select feature", num_cols, key="box_feature")
+        fig, ax = plt.subplots(figsize=(8, 5))
+        sns.boxplot(data=raw_df, x=target_col, y=box_feature, palette="Set2", ax=ax)
+        ax.set_title(f"{box_feature} by Spending Segment")
+        plt.tight_layout()
+        st.pyplot(fig)
+        plt.close(fig)
+
+
+def main():
+    if not check_pwd():
+        return
+
+
+st.sidebar.title("Navigation")
+page = st.sidebar.radio(
+    "Select a page:",
+    [
+        "Overview",
+    ],
+)
+
+raw_df, cleaned_df = load_data()
+rf, lr, dt, encoders, split_data = load_models()
+
+if page == "Overview":
+    page_overview(raw_df)
+
+if __name__ == "__main__":
+    main()
