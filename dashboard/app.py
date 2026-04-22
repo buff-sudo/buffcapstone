@@ -27,6 +27,7 @@ LOG_PATH = os.path.join(BASE_DIR, "..", "logs", "predictions.csv")
 GREEN = "#2ecc71"
 ORANGE = "#f39c12"
 RED = "#e74c3c"
+BLUE = "#4a90d9"
 
 
 # Basic security check, would use st.secrets in production, for this capstone password is hardcoded
@@ -213,6 +214,102 @@ def page_exploration(raw_df, cleaned_df, encoders):
         st.pyplot(fig)
         plt.close(fig)
 
+# Page: Predictions
+def page_predictions(rf, encoders, split_data):
+    st.header("Player Spending Segment Prediction")
+    st.write("Enter player attributes below to predict their spending segment")
+
+    feature_names = split_data["feature_names"]
+    target_encoder = encoders.get("SpendingSegment")
+    class_names = list(target_encoder.classes_)
+
+    input_values = {}
+
+    col1, col2 = st.columns(2)
+    for i, feat in enumerate(feature_names):
+        target_col = col1 if i % 2 == 0 else col2
+        with target_col:
+            if feat in encoders:
+                le = encoders[feat]
+                options = list(le.classes_)
+                selected = st.selectbox(feat, options, key=f"pred_{feat}")
+                input_values[feat] = le.transform([selected])[0]
+            else:
+                X_train = split_data["X_train"]
+                if isinstance(X_train, pd.DataFrame):
+                    col_idx = list(X_train.columns).index(feat) if feat in X_train.columns else None
+                    if col_idx is not None:
+                        col_data = X_train[feat]
+                    else:
+                        st.error(f"Feature {feat} was not found in training data")
+                else: 
+                    feat_idx = feature_names.index(feat)
+                    col_data = pd.Series(X_train[:, feat_idx])
+                
+                min_val = float(col_data.min())
+                max_val = float(col_data.max())
+                mean_val = float(col_data.mean())
+
+                input_values[feat] = st.slider(
+                    feat,
+                    min_value=min_val,
+                    max_value=max_val,
+                    value=mean_val,
+                    key=f"pred_{feat}"
+                )
+    if st.button("Classify Player", type="primary"):
+        input_array = np.array([[input_values[f] for f in feature_names]])
+        prediction = rf.predict(input_array)[0]
+        probabilities = rf.predict_proba(input_array)[0]
+        predicted_label = class_names[prediction]
+        confidence = probabilities[prediction]
+
+        log_prediction(input_values, predicted_label, confidence)
+
+        st.success(f"Predicted Segment: **{predicted_label.upper()}** "
+                   f"(confidence: {confidence:.1%})")
+        
+        # Probability breakdown
+        st.subheader("Class Probabilities")
+        prob_df = pd.DataFrame({
+            "Segment": class_names,
+            "Probability": probabilities,
+        }).sort_values("Probability", ascending=False)
+
+        fig, ax = plt.subplots(figsize=(6, 3))
+        ax.barh(prob_df["Segment"], prob_df["Probability"], color=BLUE)
+        ax.set_xlim(0, 1)
+        ax.set_xlabel("Probability")
+        ax.set_title("Prediction Probabilities")
+        plt.tight_layout()
+        st.pyplot(fig)
+        plt.close(fig)
+
+        # SHAP waterfall for this prediction
+        st.subheader("Prediction Explanation (SHAP)")
+        explainer = shap.TreeExplainer(rf)
+        shap_vals = explainer.shap_values(input_array)
+
+        if isinstance(shap_vals, list):
+            sv = shap_vals[prediction][0]
+            base = explainer.expected_value[prediction]
+        else:
+            sv = shap_vals[0, :, prediction]
+            base = explainer.expected_value[prediction]
+        
+        fig, ax = plt.subplots(figsize=(8, 5))
+        shap.waterfall_plot(
+            shap.Explanation(
+                values=sv,
+                base_values=base,
+                data=input_array.flatten(),
+                feature_names=feature_names,
+            ),
+            show=False
+        )
+        plt.tight_layout()
+        st.pyplot(fig)
+        plt.close(fig)
 
 def main():
     if not check_pwd():
@@ -224,6 +321,7 @@ def main():
         [
             "Overview",
             "Exploration",
+            "Predictions",
         ],
     )
 
@@ -234,6 +332,8 @@ def main():
         page_overview(raw_df)
     elif page == "Exploration":
         page_exploration(raw_df, cleaned_df, encoders)
+    elif page == "Predictions":
+        page_predictions(rf, encoders, split_data)
 
 
 if __name__ == "__main__":
