@@ -47,25 +47,41 @@ Confirm the following files and directories exist:
 
 ```
 buff-capstone/
+├── .gitignore
+├── BuffCapstone.ipynb
+├── pyproject.toml
+├── README.md
+├── dashboard/
+│   └── app.py
 ├── data/
 │   ├── raw/
 │   │   └── game_data.csv
 │   └── cleaned/
 │       └── cleaned_dataset.csv
-├── models/
-│   ├── random_forest.joblib
-│   ├── logistic_regression.joblib
-│   ├── decision_tree.joblib
-│   └── encoders.joblib
-├── dashboard/
-│   └── app.py
 ├── docs/
 │   ├── business_requirements.md
 │   ├── quick_start_guide.md
+│   ├── BuffCapstone_AB.docx
+│   ├── BuffCapstone_CD.docx
 │   └── screenshots/
-├── capstone_full_pipeline.ipynb
-├── pyproject.toml
-└── README.md
+│       ├── missing_values.png
+│       ├── target_distribution.png
+│       ├── numeric_distributions.png
+│       ├── correlation_matrix.png
+│       ├── boxplots.png
+│       ├── class_imbalance.png
+│       ├── confusion_matrices.png
+│       ├── shap_summary.png
+│       ├── top5_features.png
+│       ├── shap_waterfall.png
+│       └── feature_dependency_comparison.png
+└── models/
+    ├── random_forest.joblib
+    ├── random_forest_full.joblib
+    ├── logistic_regression.joblib
+    ├── decision_tree.joblib
+    ├── encoders.joblib
+    └── split_data.joblib
 ```
 
 If the `models/` directory is empty or missing `.joblib` files, you need to run the notebook first (see Step 4).
