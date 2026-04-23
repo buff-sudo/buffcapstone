@@ -29,7 +29,7 @@ If the live link is unavailable, follow Option 2 below.
 ### Step 1: Clone the Repository
 
 ```
-git clone https://github.com/buff-sudo/buff-capstone.git
+git clone https://github.com/buff-sudo/buffcapstone.git
 cd buff-capstone
 ```
 
