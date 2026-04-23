@@ -61,7 +61,8 @@ def load_data():
 
 @st.cache_resource
 def load_models():
-    rf = joblib.load(os.path.join(MODELS_DIR, "random_forest.joblib"))
+    rf_data = joblib.load(os.path.join(MODELS_DIR, "random_forest.joblib"))
+    rf = rf_data["model"] if isinstance(rf_data, dict) else rf_data
     lr = joblib.load(os.path.join(MODELS_DIR, "logistic_regression.joblib"))
     dt = joblib.load(os.path.join(MODELS_DIR, "decision_tree.joblib"))
     encoders = joblib.load(os.path.join(MODELS_DIR, "encoders.joblib"))
